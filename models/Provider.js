@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const ProviderSchma = new mongoose.Schema({
+const ProviderSchema = new mongoose.Schema({
     name: {
         type: String,
         required: [true,'Please add a name'],
@@ -38,18 +38,18 @@ const ProviderSchma = new mongoose.Schema({
 });
 
 //Cascade delete bookings when a provider is delete
-ProviderSchma.pre('deleteOne', {document: true, query: false}, async function(next){
+ProviderSchema.pre('deleteOne', {document: true, query: false}, async function(next){
     console.log(`Bookings being removed from provider ${this._id}`);
     await this.model('Booking').deleteMany({provider: this._id});
     next();
 });
 
 //Reverse populate with virtuals
-ProviderSchma.virtual('bookings', {
+ProviderSchema.virtual('bookings', {
     ref: 'Booking',
     localField: '_id',
     foreignField: 'provider',
     justOne: false
 });
 
-module.exports = mongoose.model('Provider', ProviderSchma);
+module.exports = mongoose.model('Provider', ProviderSchema);
