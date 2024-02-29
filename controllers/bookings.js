@@ -1,138 +1,138 @@
-const Appointment = require('../models/Appointment');
-const Hospital = require('../models/Hospital');
+const Booking = require('../models/Booking');
+const Provider = require('../models/Provider');
 
-exports.getAppointments = async (req,res,next) => {
+exports.getBookings = async (req,res,next) => {
     let query;
 
-    //General users can see only their appointment
+    //General users can see only their booking
     if (req.user.role !== 'admin'){
-        query = Appointment.find({user:req.user.id}).populate({
-            path:'hospital',
+        query = Booking.find({user:req.user.id}).populate({
+            path:'provider',
             select:'name province tel'
         });
     } else {//If you're admin, you can see all
-        if (req.params.hospitalId){
-            console.log(req.params.hospitalId);
-            query = Appointment.find({hospital: req.params.hospitalId }).populate({
-                path: 'hospital',
+        if (req.params.providerId){
+            console.log(req.params.providerId);
+            query = Booking.find({provider: req.params.providerId }).populate({
+                path: 'provider',
                 select:'name province tel'
             });
         } else {
-            query = Appointment.find().populate({
-                path: 'hospital',
+            query = Booking.find().populate({
+                path: 'provider',
                 select:'name province tel'
             });
         }
     }
     
     try {
-        const appointments = await query;
+        const bookings = await query;
         res.status(200).json({
             success:true, 
-            count:appointments.length, 
-            data: appointments
+            count:bookings.length, 
+            data: bookings
         });
     } catch (error) {
         console.log(error);
         return res.status(500).json({
             success:false, 
-            message:"Cannot find Appointment"
+            message:"Cannot find Booking"
         });
     }
 
 };
 
-exports.getAppointment = async (req,res,next) => {
+exports.getBooking = async (req,res,next) => {
     try {
-        const appointment = await Appointment.findById(req.params.id).populate({
-            path: 'hospital',
+        const booking = await Booking.findById(req.params.id).populate({
+            path: 'provider',
             select: 'name description tel'
         });
 
-        if (!appointment){
-            return res.status(404).json({success:false, message:`No appointment with the id of ${req.params.id}`});
+        if (!booking){
+            return res.status(404).json({success:false, message:`No booking with the id of ${req.params.id}`});
         }
 
-        res.status(200).json({success: true, data: appointment});
+        res.status(200).json({success: true, data: booking});
     } catch (error) {
         console.log(error);
-        return res.status(500).json({success:false, message:"Cannot find Appointment"});
+        return res.status(500).json({success:false, message:"Cannot find Booking"});
     }
 }
 
-exports.addAppointment = async (req,res,next) => {
+exports.addBooking = async (req,res,next) => {
     try {
-        req.body.hospital = req.params.hospitalId;
+        req.body.provider = req.params.providerId;
 
-        const hospital = await Hospital.findById(req.params.hospitalId);
+        const provider = await Provider.findById(req.params.providerId);
 
-        if (!hospital) {
-            return res.status(404).json({success:false, message:`No hospital with the id of ${req.params.hospitalId}`});
+        if (!provider) {
+            return res.status(404).json({success:false, message:`No provider with the id of ${req.params.providerId}`});
         }
         
         console.log(req.body);
 
         //add user Id to req.body
         req.body.user = req.user.id;
-        //chech for existed appointment
-        const existedAppointments = await Appointment.find({user:req.user.id});
+        //check for existed booking
+        const existedBookings = await Booking.find({user:req.user.id});
 
-        if (existedAppointments.length >= 3 && req.user.role !== 'admin'){
-            return res.status(400).json({success:false, message:`The user with ID ${req.user.id} has already made 3 appointments`});
+        if (existedBookings.length >= 3 && req.user.role !== 'admin'){
+            return res.status(400).json({success:false, message:`The user with ID ${req.user.id} has already made 3 bookings`});
         }
 
-        const appointment = await Appointment.create(req.body);
+        const booking = await Booking.create(req.body);
 
-        res.status(200).json({success:true, data: appointment});
+        res.status(200).json({success:true, data: booking});
     } catch (error) {
         console.log(error);
-        return res.status(500).json({success:false, message:"Cannot create Appointment"});
+        return res.status(500).json({success:false, message:"Cannot create Booking"});
     }
 };
 
-exports.updateAppointment = async (req,res,next) => {
+exports.updateBooking = async (req,res,next) => {
     try {
-        let appointment = await Appointment.findById(req.params.id);
+        let booking = await Booking.findById(req.params.id);
 
-        if(!appointment) {
-            return res.status(404).json({success:false, message:`No appointment with the id of ${req.params.id}`});
+        if(!booking) {
+            return res.status(404).json({success:false, message:`No booking with the id of ${req.params.id}`});
         }
 
-        //Make sure is the appointment owner
-        if (appointment.user.toString() !== req.user.id && req.user.role !== 'admin'){
-            return res.status(401).json({success:false, message:`User ${req.user.id} is not authorize to update this appointment`});
+        //Make sure is the booking owner
+        if (booking.user.toString() !== req.user.id && req.user.role !== 'admin'){
+            return res.status(401).json({success:false, message:`User ${req.user.id} is not authorize to update this booking`});
         }
 
-        appointment = await Appointment.findByIdAndUpdate(req.params.id, req.body, {
+        booking = await Booking.findByIdAndUpdate(req.params.id, req.body, {
             new:true,
             runValidators:true
         });
 
-        res.status(200).json({success:true, data: appointment});
+        res.status(200).json({success:true, data: booking});
     } catch (error) {
         console.log(error);
-        return res.status(500).json({success:false, message:"Cannot update Appointment"});
+        return res.status(500).json({success:false, message:"Cannot update Booking"});
     }
 };
 
-exports.deleteAppointment = async (req,res,next) => {
+exports.deleteBooking = async (req,res,next) => {
     try {
-        const appointment = await Appointment.findById(req.params.id);
+        const booking = await Booking.findById(req.params.id);
 
-        if(!appointment) {
-            return res.status(404).json({success:false, message:`No appointment with the id of ${req.params.id}`});
+        if(!booking) {
+            return res.status(404).json({success:false, message:`No booking with the id of ${req.params.id}`});
         }
 
-        //Make sure is the appointment owner
-        if (appointment.user.toString() !== req.user.id && req.user.role !== 'admin'){
-            return res.status(401).json({success:false, message:`User ${req.user.id} is not authorize to delete this appointment`});
+        //Make sure is the booking owner
+        if (booking.user.toString() !== req.user.id && req.user.role !== 'admin'){
+            return res.status(401).json({success:false, message:`User ${req.user.id} is not authorize to delete this booking`});
         }
 
-        await appointment.deleteOne();
+        await booking.deleteOne();
 
-        res.status(200).json({success:true, data: appointment});
+        res.status(200).json({success:true, data: booking});
     } catch (error) {
         console.log(error);
-        return res.status(500).json({success:false, message:"Cannot dalete Appointment"});
+        return res.status(500).json({success:false, message:"Cannot dalete Booking"});
     }
 }
